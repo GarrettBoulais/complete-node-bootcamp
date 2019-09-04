@@ -1,6 +1,12 @@
 const fs = require('fs'); // get access to reading and writing data. returns an object
 const http = require('http'); // gives us networking
-const url = require('url'); //
+const url = require('url'); // want to parse variables off of url
+
+// third party module
+const slugify = require('slugify');
+
+// our own module
+const replaceTemplate = require('./modules/replaceTemplate');
 
 //////////////////////////////////////////////////
 // FILES
@@ -30,34 +36,53 @@ const url = require('url'); //
 // });
 // console.log('Will read file');
 
-
-
-
 //////////////////////////////////////////////////
 // SERVER
 //////////////////////////////////////////////////
 
 // this function is only executed once at beginning
 const data = fs.readFileSync(`${__dirname}/dev-data/data.json`, 'utf-8');
-const dataObject = JSON.parse(data);
+const dataObject = JSON.parse(data); // parse data into an object
+
+// load templates into memory once
+const templateOverview = fs.readFileSync(`${__dirname}/templates/templateOverview.html`, 'utf-8');
+const templateCard = fs.readFileSync(`${__dirname}/templates/templateCard.html`, 'utf-8');
+const templateProduct = fs.readFileSync(`${__dirname}/templates/templateProduct.html`, 'utf-8');
+
+// create slugs so we can replace the query ?id=0 with fresh-avacados
+const slugs = dataObject.map(el => slugify(el.productName, { lower: true }));
 
 // create a server
-// every time a new request hits our server, this callback function 
-// will be called
-const server = http.createServer((req,res) => {
-  console.log(req.url);
+const server = http.createServer((req, res) => {
+  // turns url into object so we can get the query
+  const { query, pathname } = url.parse(req.url, true);
 
-  const pathName = req.url;
-  if(pathName === '/' || pathName === '/overview') {
-    res.end('This is the OVERVIEW');
+  // OVERVIEW PAGE
+  if (pathname === '/' || pathname === '/overview') {
+    // 1. say what the content is
+    res.writeHead(200, { 'Content-type': 'text/html' });
 
-  } else if(pathName === '/product') {
-    res.end('This is the PRODUCT');
+    // replace templates with product info in dataObject, join into
+    // a single string
+    const cardsHtml = dataObject.map(el => replaceTemplate(templateCard, el)).join('');
+    // insert all cards (they are in one string) html into overview page
+    const output = templateOverview.replace('{%PRODUCT_CARDS%}', cardsHtml);
 
-  } else if(pathName === '/api') {
-   res.writeHead(200, { 'Content-type': 'application/json'});
-   res.end(data);
+    res.end(output);
 
+    // PRODUCT PAGE
+  } else if (pathname === '/product') {
+    res.writeHead(200, { 'Content-type': 'text/html' });
+    const product = dataObject[query.id];
+    const productHtml = replaceTemplate(templateProduct, product);
+    res.end(productHtml);
+
+    // API
+  } else if (pathname === '/api') {
+    res.writeHead(200, { 'Content-type': 'application/json' });
+    res.end(data);
+
+    // NOT FOUND
   } else {
     res.writeHead(404, {
       'Content-type': 'text/html'
@@ -65,11 +90,9 @@ const server = http.createServer((req,res) => {
     // note we can never send headers after the response
     res.end('<h1>Page not found</h1>');
   }
-
- // res.end('Hello from the server');
 });
 
 // listen for incoming requests
 server.listen(8000, '127.0.0.1', () => {
-  console.log("Listening to requests on port 8000");
+  console.log('Listening to requests on port 8000');
 });
