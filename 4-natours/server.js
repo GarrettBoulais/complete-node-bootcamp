@@ -3,6 +3,20 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 const app = require('./app'); // needs env variables configured
 
+// SAFETY NET -------------------------------------------
+// handle unhandled rejections
+process.on('unhandledRejection', err => {
+  console.log('unhandled rejection!!!! Shutting down...');
+  console.log(err.name,err.message);
+  process.exit(1);
+});
+
+process.on('uncaughtException', err => {
+  console.log('uncaught exception!!!! Shutting down...');
+  console.log(err.name,err.message);
+  process.exit(1);
+});
+
 // console.log(process.env);
 const DB = process.env.DATABASE.replace(
   '<PASSWORD>',
@@ -20,12 +34,9 @@ mongoose
   .then(() => {
     console.log('DB connection successful');
   })
-  .catch(err => {
-    console.log(err);
-  });
 
 // START SERVER ------------------------------------
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`App running on port ${port}...`);
 });
