@@ -18,7 +18,7 @@ const createSendToken = (user, statusCode, res) => {
     expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    httpOnly: true // cookie can not be modified
+    httpOnly: true // cookie can not be modified, note we cant delete it now!! :(
   };
   // only sends over https. only necessary in production
   if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
@@ -75,6 +75,16 @@ exports.login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+exports.logout = (req,res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10*1000),
+    httpOnly: true
+  });
+  res.status(200).json({
+    status: 'success'
+  });
+}
+
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
   // 1. Get the token and check if it's there
@@ -83,7 +93,9 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
-  }
+
+    // check cookies
+  } else if (req.cookies.jwt) token = req.cookies.jwt;
 
   if (!token)
     return next(
@@ -107,8 +119,39 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // grant access to next protected route
   req.user = currentUser;
+  res.locals.user = currentUser;
   next();
 });
+
+// only for rendered pages, no errors!
+exports.isLoggedIn = async (req, res, next) => {
+  if (req.cookies.jwt) {
+    try {
+      // 1) Verifies token
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET
+      );
+
+      // 2. Check if user still exists
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) {
+        return next();
+      }
+      // 3. Check if user changed password after the token was issued
+      if (currentUser.changedPasswordAfter(decoded.iat)) {
+        return next();
+      }
+      // There is a logged in user, make that user accessible to templates
+      res.locals.user = currentUser;
+      return next();
+    // if err then go to next middleware (when logging out and there is no token)
+    }catch(err) {
+      return next();
+    }
+  }
+  next();
+};
 
 // restrict certain routes
 // note that protect() runs before this function so we have access to the
