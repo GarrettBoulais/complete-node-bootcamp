@@ -53,7 +53,6 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
 });
 
 exports.createBookingCheckout = catchAsync(async (req, res, next) => {
-  console.log('in here');
   // this is only temporary because it is unsecure
   const { tour, user, price } = req.query;
   if (!tour || !user || !price) return next();

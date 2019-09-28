@@ -7,6 +7,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser'); // need to get cookies from parser
+const compression = require('compression');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
@@ -74,16 +75,7 @@ app.use(
   })
 );
 
-
-// create our own middleware function
-// we have access to the "next" function,
-// using it here tells express this is middleware
-// note that order matters, handling requests before
-// this definition will end the response cycle
-// app.use((req, res, next) => {
-//   console.log('hello from middleware');
-//   next(); // without this, cycle would get stuck
-// });
+app.use(compression()); // compresses all text going to client
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
