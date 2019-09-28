@@ -1,8 +1,11 @@
 const express = require('express');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
+const bookingRouter = require('./bookingRoutes');
 
 const router = express.Router();
+
+router.use('/:userId/bookings', bookingRouter);
 
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
@@ -15,7 +18,12 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 // runs in sequence! All these routes are technically middlewares
 router.use(authController.protect);
 
-router.patch('/updateMe', userController.updateMe);
+router.patch(
+  '/updateMe',
+  userController.uploadUserPhoto,
+  userController.resizeUserPhoto,
+  userController.updateMe
+);
 router.delete('/deleteMe', userController.deleteMe);
 router.patch('/updateMyPassword', authController.updatePassword);
 router.get('/me', userController.getMe, userController.getUser);

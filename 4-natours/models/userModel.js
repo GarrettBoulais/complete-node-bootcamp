@@ -16,7 +16,10 @@ const userSchema = new mongoose.Schema({
     lowercase: true, // transforms email to lowercase
     validate: [validator.isEmail, 'please enter a valid email']
   },
-  photo: String,
+  photo: {
+    type: String,
+    default: 'default.jpg'
+  },
   role: {
     type: String,
     enum: ['user', 'guide', 'lead-guide', 'admin'],
@@ -62,7 +65,7 @@ userSchema.pre('save', async function(next) {
 
 userSchema.pre('save', function(next) {
   // if we didnt modify the password then do nothing
-  if(!this.isModified('password') || this.isNew) return next();
+  if (!this.isModified('password') || this.isNew) return next();
 
   // - 1000ms to make sure token was not created before
   this.passwordChangedAt = Date.now() - 1000;
@@ -72,12 +75,9 @@ userSchema.pre('save', function(next) {
 userSchema.pre(/^find/, function(next) {
   // this points to the current query
   // only display active users
-  this.find({active: {$ne: false} });
+  this.find({ active: { $ne: false } });
   next();
 });
-
-
-
 
 // instance method
 userSchema.methods.correctPassword = async function(

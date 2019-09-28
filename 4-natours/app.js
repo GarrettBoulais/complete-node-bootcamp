@@ -11,6 +11,7 @@ const cookieParser = require('cookie-parser'); // need to get cookies from parse
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 
 const AppError = require('./utils/appError');
@@ -86,7 +87,6 @@ app.use(
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-  console.log(req.cookies);
   next();
 });
 
@@ -98,6 +98,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter); // specify route and router
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 // CATCH ALL ERRORS. Note that this is at the end of the file!
 app.all('*', (req, res, next) => {

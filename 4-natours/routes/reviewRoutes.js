@@ -1,6 +1,7 @@
 const express = require('express');
 const reviewController = require('../controllers/reviewController');
 const authController = require('../controllers/authController');
+const bookingController = require('../controllers/bookingController');
 
 // by default routter has access to params of specific route. To get access to
 // params from other routers, we need to merge params
@@ -15,6 +16,8 @@ router
   .post(
     authController.restrictTo('user'),
     reviewController.setTourUserIds,
+    reviewController.checkIfBooked,
+    reviewController.checkDuplicates,
     reviewController.createReview
   );
 
